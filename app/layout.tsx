@@ -9,13 +9,13 @@ const geistSans = Geist({
   subsets: ["latin"],
 });
 
-const geistMono = Geist({
+const geistMono = Geist_Mono({
   variable: "--font-geist-mono",
   subsets: ["latin"],
 });
 
 export const metadata: Metadata = {
-metadataBase: new URL("https://eataliano-mauve.vercel.app"),
+  metadataBase: new URL("https://eataliano-mauve.vercel.app"),
   title: "Eataliano | Authentic Italian Food",
   description:
     "Discover delicious Italian pizza, pasta and more at Eataliano. Order your favorite meals online.",
@@ -35,9 +35,10 @@ metadataBase: new URL("https://eataliano-mauve.vercel.app"),
       "Discover delicious Italian pizza, pasta and more at Eataliano. Order your favorite meals online.",
     images: [
       {
-        url: "/icon-512.png",
-        width: 512,
-        height: 512,
+        url: "/og-image.jpg",
+        width: 1200,
+        height: 630,
+        type: "image/jpeg",
         alt: "Eataliano Restaurant Logo",
       },
     ],
@@ -47,7 +48,7 @@ metadataBase: new URL("https://eataliano-mauve.vercel.app"),
     title: "Eataliano | Authentic Italian Food",
     description:
       "Discover delicious Italian pizza, pasta and more at Eataliano.",
-    images: ["/icon-512.png"],
+    images: ["/og-image.jpg"],
   },
 };
 
