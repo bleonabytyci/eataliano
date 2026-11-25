@@ -58,6 +58,7 @@ export default function AdminPage() {
     }
   }
 
+  // Kontrollimi fillestar i hyrjes
   useEffect(() => {
     async function checkLogin() {
       await loadOrders();
@@ -66,6 +67,17 @@ export default function AdminPage() {
 
     checkLogin();
   }, []);
+
+  // Rifreskimi automatik i porosive çdo 5 sekonda
+  useEffect(() => {
+    if (!isLoggedIn) return;
+
+    const interval = setInterval(() => {
+      loadOrders();
+    }, 5000);
+
+    return () => clearInterval(interval);
+  }, [isLoggedIn]);
 
   async function handleLogin(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -103,7 +115,10 @@ export default function AdminPage() {
     setSuccess("");
   }
 
-  async function handleStatusChange(orderId: number | string, status: string) {
+  async function handleStatusChange(
+    orderId: number | string,
+    status: string
+  ) {
     setError("");
     setSuccess("");
     setUpdatingOrderId(orderId);
@@ -132,7 +147,9 @@ export default function AdminPage() {
       setSuccess(`Order #${orderId} status updated successfully.`);
     } catch (error) {
       setError(
-        error instanceof Error ? error.message : "Could not update order status."
+        error instanceof Error
+          ? error.message
+          : "Could not update order status."
       );
     } finally {
       setUpdatingOrderId(null);
