@@ -15,9 +15,7 @@ const geistMono = Geist({
 });
 
 export const metadata: Metadata = {
-metadataBase: new URL(
-  "https://eataliano-hjtbfn3nc-eataliano.vercel.app"
-),
+metadataBase: new URL("https://eataliano-mauve.vercel.app"),
   title: "Eataliano | Authentic Italian Food",
   description:
     "Discover delicious Italian pizza, pasta and more at Eataliano. Order your favorite meals online.",
