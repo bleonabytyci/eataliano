@@ -1,7 +1,7 @@
 ﻿
 "use client";
 
-import { useEffect, useState, FormEvent } from "react";
+import { useEffect, useState, type FormEvent } from "react";
 import Link from "next/link";
 
 type Ushqimi = {
@@ -14,12 +14,16 @@ export default function Checkout() {
   const [shporta, setShporta] = useState<Ushqimi[]>([]);
   const [uNgarkua, setUNgarkua] = useState(false);
   const [porosiaUPlotesua, setPorosiaUPlotesua] = useState(false);
+  const [poDergohet, setPoDergohet] = useState(false);
+  const [gabimi, setGabimi] = useState("");
 
   const [emri, setEmri] = useState("");
   const [email, setEmail] = useState("");
   const [telefoni, setTelefoni] = useState("");
   const [adresa, setAdresa] = useState("");
   const [shenime, setShenime] = useState("");
+
+  const [orderId, setOrderId] = useState<number | null>(null);
 
   useEffect(() => {
     const shportaERuajtur = localStorage.getItem("eataliano-shporta");
@@ -41,12 +45,76 @@ export default function Checkout() {
     0
   );
 
-  function dergoPorosine(event: FormEvent<HTMLFormElement>) {
+  async function dergoPorosine(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
 
-    setPorosiaUPlotesua(true);
-    localStorage.removeItem("eataliano-shporta");
-    setShporta([]);
+    setGabimi("");
+    setPoDergohet(true);
+
+    try {
+      // Bashkimi i produkteve te njejta dhe llogaritja e sasise
+      const produktet = Array.from(
+        shporta.reduce((map, ushqimi) => {
+          const key = `${ushqimi.id}-${ushqimi.emri}-${ushqimi.cmimi}`;
+          const ekzistues = map.get(key);
+
+          if (ekzistues) {
+            ekzistues.quantity += 1;
+          } else {
+            map.set(key, {
+              foodName: ushqimi.emri,
+              quantity: 1,
+              unitPrice: ushqimi.cmimi,
+            });
+          }
+
+          return map;
+        }, new Map<string, {
+          foodName: string;
+          quantity: number;
+          unitPrice: number;
+        }>())
+      ).map(([, produkti]) => produkti);
+
+      const response = await fetch("/api/orders", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          customerName: emri,
+          customerEmail: email,
+          customerPhone: telefoni,
+          deliveryAddress: adresa,
+          orderNotes: shenime,
+          items: produktet,
+        }),
+      });
+
+      const data = await response.json();
+
+      if (!response.ok || !data.success) {
+        throw new Error(
+          data.message || "The order could not be saved."
+        );
+      }
+
+      // Shporta pastrohet vetem pas ruajtjes me sukses
+      localStorage.removeItem("eataliano-shporta");
+      setShporta([]);
+      setOrderId(data.orderId);
+      setPorosiaUPlotesua(true);
+    } catch (error) {
+      console.error("Checkout error:", error);
+
+      setGabimi(
+        error instanceof Error
+          ? error.message
+          : "Something went wrong. Please try again."
+      );
+    } finally {
+      setPoDergohet(false);
+    }
   }
 
   if (porosiaUPlotesua) {
@@ -58,12 +126,17 @@ export default function Checkout() {
           </h1>
 
           <p className="mt-4 text-lg">
-            Your order details have been completed.
+            Your order has been placed successfully!
           </p>
 
+          {orderId !== null && (
+            <p className="mt-3 text-sm text-gray-300">
+              Order Number: #{orderId}
+            </p>
+          )}
+
           <p className="mt-3 text-sm text-gray-400">
-            This is a demo confirmation. The order has not yet been saved
-            to the restaurant database.
+            Your order has been saved to our database.
           </p>
 
           <Link
@@ -202,11 +275,20 @@ export default function Checkout() {
                   />
                 </div>
 
+                {gabimi && (
+                  <p className="rounded-lg border border-red-500 bg-red-950/40 p-3 text-sm text-red-300">
+                    {gabimi}
+                  </p>
+                )}
+
                 <button
                   type="submit"
-                  className="w-full rounded-lg bg-[#c94c35] px-6 py-3 font-bold hover:bg-red-700"
+                  disabled={poDergohet}
+                  className="w-full rounded-lg bg-[#c94c35] px-6 py-3 font-bold hover:bg-red-700 disabled:cursor-not-allowed disabled:opacity-60"
                 >
-                  Place Order – ${totali}
+                  {poDergohet
+                    ? "Placing Order..."
+                    : `Place Order – $${totali}`}
                 </button>
               </form>
             </section>
