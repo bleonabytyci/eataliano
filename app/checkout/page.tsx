@@ -1,7 +1,7 @@
 ﻿
 "use client";
 
-import { useEffect, useState, type FormEvent } from "react";
+import { useEffect, useRef, useState, type FormEvent } from "react";
 import Link from "next/link";
 
 type Ushqimi = {
@@ -10,10 +10,70 @@ type Ushqimi = {
   cmimi: number;
 };
 
+type ProduktiPorosise = {
+  foodName: string;
+  quantity: number;
+  unitPrice: number;
+};
+
+type PorosiaOffline = {
+  clientOrderId: string;
+  customerName: string;
+  customerEmail: string;
+  customerPhone: string;
+  deliveryAddress: string;
+  orderNotes: string;
+  items: ProduktiPorosise[];
+};
+
+const QUEUE_KEY = "eataliano-pending-orders";
+
+function lexoPorosite(): PorosiaOffline[] {
+  try {
+    const data = JSON.parse(localStorage.getItem(QUEUE_KEY) || "[]");
+    return Array.isArray(data) ? data : [];
+  } catch {
+    return [];
+  }
+}
+
+function ruajPorosite(porosite: PorosiaOffline[]) {
+  localStorage.setItem(QUEUE_KEY, JSON.stringify(porosite));
+}
+
+async function dergoNeServer(porosia: PorosiaOffline) {
+  const response = await fetch("/api/orders", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify(porosia),
+  });
+
+  const data = await response.json();
+
+  if (!response.ok || !data.success) {
+    const error = new Error(
+      data.message || "The order could not be saved."
+    );
+
+    if (response.status >= 500) {
+      error.name = "ServerError";
+    } else {
+      error.name = "ValidationError";
+    }
+
+    throw error;
+  }
+
+  return data;
+}
+
 export default function Checkout() {
   const [shporta, setShporta] = useState<Ushqimi[]>([]);
   const [uNgarkua, setUNgarkua] = useState(false);
   const [porosiaUPlotesua, setPorosiaUPlotesua] = useState(false);
+  const [porosiaNePritje, setPorosiaNePritje] = useState(false);
   const [poDergohet, setPoDergohet] = useState(false);
   const [gabimi, setGabimi] = useState("");
 
@@ -23,7 +83,61 @@ export default function Checkout() {
   const [adresa, setAdresa] = useState("");
   const [shenime, setShenime] = useState("");
 
-  const [orderId, setOrderId] = useState<number | null>(null);
+  const [orderId, setOrderId] = useState<number | string | null>(null);
+  const [clientOrderId, setClientOrderId] = useState("");
+
+  const poSinkronizohet = useRef(false);
+
+  const totali = shporta.reduce(
+    (shuma, ushqimi) => shuma + ushqimi.cmimi,
+    0
+  );
+
+  async function sinkronizoPorosite() {
+    if (!navigator.onLine || poSinkronizohet.current) {
+      return;
+    }
+
+    poSinkronizohet.current = true;
+
+    try {
+      const porosite = lexoPorosite();
+
+      for (const porosia of porosite) {
+        try {
+          const data = await dergoNeServer(porosia);
+
+          const teMbeturat = lexoPorosite().filter(
+            (item) => item.clientOrderId !== porosia.clientOrderId
+          );
+
+          ruajPorosite(teMbeturat);
+
+          setOrderId(data.orderId);
+          setClientOrderId(porosia.clientOrderId);
+          setPorosiaNePritje(false);
+          setPorosiaUPlotesua(true);
+          setGabimi("");
+        } catch (error) {
+          console.error("Order synchronization error:", error);
+
+          setGabimi(
+            error instanceof Error
+              ? error.message
+              : "The order is still waiting to be sent."
+          );
+
+          break;
+        }
+      }
+
+      if (lexoPorosite().length === 0) {
+        setPorosiaNePritje(false);
+      }
+    } finally {
+      poSinkronizohet.current = false;
+    }
+  }
 
   useEffect(() => {
     const shportaERuajtur = localStorage.getItem("eataliano-shporta");
@@ -37,13 +151,29 @@ export default function Checkout() {
       }
     }
 
-    setUNgarkua(true);
-  }, []);
+    const porosite = lexoPorosite();
 
-  const totali = shporta.reduce(
-    (shuma, ushqimi) => shuma + ushqimi.cmimi,
-    0
-  );
+    if (porosite.length > 0) {
+      setPorosiaNePritje(true);
+      setClientOrderId(porosite[0].clientOrderId);
+    }
+
+    setUNgarkua(true);
+
+    function kurRikthehetInterneti() {
+      void sinkronizoPorosite();
+    }
+
+    window.addEventListener("online", kurRikthehetInterneti);
+
+    if (navigator.onLine && porosite.length > 0) {
+      void sinkronizoPorosite();
+    }
+
+    return () => {
+      window.removeEventListener("online", kurRikthehetInterneti);
+    };
+  }, []);
 
   async function dergoPorosine(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -52,10 +182,10 @@ export default function Checkout() {
     setPoDergohet(true);
 
     try {
-      // Bashkimi i produkteve te njejta dhe llogaritja e sasise
       const produktet = Array.from(
         shporta.reduce((map, ushqimi) => {
-          const key = `${ushqimi.id}-${ushqimi.emri}-${ushqimi.cmimi}`;
+          const key = `${ushqimi.id}-${ushqimi.emri}`;
+
           const ekzistues = map.get(key);
 
           if (ekzistues) {
@@ -69,41 +199,53 @@ export default function Checkout() {
           }
 
           return map;
-        }, new Map<string, {
-          foodName: string;
-          quantity: number;
-          unitPrice: number;
-        }>())
+        }, new Map<string, ProduktiPorosise>())
       ).map(([, produkti]) => produkti);
 
-      const response = await fetch("/api/orders", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          customerName: emri,
-          customerEmail: email,
-          customerPhone: telefoni,
-          deliveryAddress: adresa,
-          orderNotes: shenime,
-          items: produktet,
-        }),
-      });
+      const porosia: PorosiaOffline = {
+        clientOrderId: crypto.randomUUID(),
+        customerName: emri.trim(),
+        customerEmail: email.trim(),
+        customerPhone: telefoni.trim(),
+        deliveryAddress: adresa.trim(),
+        orderNotes: shenime.trim(),
+        items: produktet,
+      };
 
-      const data = await response.json();
+      if (!navigator.onLine) {
+        ruajPorosite([...lexoPorosite(), porosia]);
 
-      if (!response.ok || !data.success) {
-        throw new Error(
-          data.message || "The order could not be saved."
-        );
+        localStorage.removeItem("eataliano-shporta");
+        setShporta([]);
+        setClientOrderId(porosia.clientOrderId);
+        setPorosiaNePritje(true);
+
+        return;
       }
 
-      // Shporta pastrohet vetem pas ruajtjes me sukses
-      localStorage.removeItem("eataliano-shporta");
-      setShporta([]);
-      setOrderId(data.orderId);
-      setPorosiaUPlotesua(true);
+      try {
+        const data = await dergoNeServer(porosia);
+
+        localStorage.removeItem("eataliano-shporta");
+        setShporta([]);
+        setOrderId(data.orderId);
+        setPorosiaUPlotesua(true);
+      } catch (error) {
+        if (
+          error instanceof Error &&
+          error.name === "ValidationError"
+        ) {
+          throw error;
+        }
+
+        // Ruajmë të njëjtin identifikues për tentimin e ardhshëm.
+        ruajPorosite([...lexoPorosite(), porosia]);
+
+        localStorage.removeItem("eataliano-shporta");
+        setShporta([]);
+        setClientOrderId(porosia.clientOrderId);
+        setPorosiaNePritje(true);
+      }
     } catch (error) {
       console.error("Checkout error:", error);
 
@@ -115,6 +257,55 @@ export default function Checkout() {
     } finally {
       setPoDergohet(false);
     }
+  }
+
+  if (!uNgarkua) {
+    return (
+      <main className="flex min-h-screen items-center justify-center bg-[#101820] text-white">
+        Loading...
+      </main>
+    );
+  }
+
+  if (porosiaNePritje) {
+    return (
+      <main className="flex min-h-screen items-center justify-center bg-[#101820] px-6 text-white">
+        <div className="w-full max-w-lg rounded-xl border border-yellow-700 bg-[#192631] p-8 text-center">
+          <h1 className="text-3xl font-bold text-[#e9a23b]">
+            Order Waiting
+          </h1>
+
+          <p className="mt-4 text-lg">
+            Your order is safely saved on this device.
+          </p>
+
+          <p className="mt-3 text-sm text-yellow-300">
+            Waiting for internet connection. Your order will be sent automatically when you are online.
+          </p>
+
+          {clientOrderId && (
+            <p className="mt-4 break-all text-xs text-gray-400">
+              Reference: {clientOrderId}
+            </p>
+          )}
+
+          {gabimi && (
+            <p className="mt-4 text-sm text-red-300">{gabimi}</p>
+          )}
+
+          <p className="mt-4 text-sm text-gray-300">
+            Your order is not confirmed yet.
+          </p>
+
+          <Link
+            href="/"
+            className="mt-6 inline-block rounded-lg bg-[#c94c35] px-6 py-3 font-semibold"
+          >
+            Back to Menu
+          </Link>
+        </div>
+      </main>
+    );
   }
 
   if (porosiaUPlotesua) {
@@ -146,14 +337,6 @@ export default function Checkout() {
             Back to Menu
           </Link>
         </div>
-      </main>
-    );
-  }
-
-  if (!uNgarkua) {
-    return (
-      <main className="flex min-h-screen items-center justify-center bg-[#101820] text-white">
-        Loading...
       </main>
     );
   }
@@ -195,7 +378,6 @@ export default function Checkout() {
                   className="flex justify-between border-b border-gray-700 py-4"
                 >
                   <span>{ushqimi.emri}</span>
-
                   <span className="font-semibold text-[#e9a23b]">
                     ${ushqimi.cmimi}
                   </span>

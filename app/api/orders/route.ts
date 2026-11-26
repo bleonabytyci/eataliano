@@ -2,7 +2,6 @@
 import { sql } from "@/lib/db";
 import { NextResponse } from "next/server";
 
-// Lista zyrtare e produkteve dhe cmimeve
 const menuPrices: Record<string, number> = {
   "Margherita Pizza": 14,
   "Pepperoni Pizza": 17,
@@ -15,6 +14,7 @@ export async function POST(request: Request) {
     const body = await request.json();
 
     const {
+      clientOrderId,
       customerName,
       customerEmail,
       customerPhone,
@@ -22,6 +22,19 @@ export async function POST(request: Request) {
       orderNotes,
       items,
     } = body;
+
+    // Kontrollimi i identifikuesit unik
+    if (
+      typeof clientOrderId !== "string" ||
+      !/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(
+        clientOrderId
+      )
+    ) {
+      return NextResponse.json(
+        { success: false, message: "Invalid order identifier." },
+        { status: 400 }
+      );
+    }
 
     // Kontrollimi i te dhenave te klientit
     if (
@@ -48,7 +61,6 @@ export async function POST(request: Request) {
       );
     }
 
-    // Serveri i percakton cmimet nga menuja zyrtare
     const validItems = items.map((item) => {
       const foodName =
         typeof item.foodName === "string" ? item.foodName.trim() : "";
@@ -63,10 +75,7 @@ export async function POST(request: Request) {
     const invalidItems = validItems.some(
       (item) =>
         !item.food_name ||
-        !Object.prototype.hasOwnProperty.call(
-          menuPrices,
-          item.food_name
-        ) ||
+        !Object.prototype.hasOwnProperty.call(menuPrices, item.food_name) ||
         !Number.isInteger(item.quantity) ||
         item.quantity <= 0 ||
         item.quantity > 50
@@ -79,16 +88,36 @@ export async function POST(request: Request) {
       );
     }
 
-    // Totali llogaritet ne server
     const totalAmount = validItems.reduce(
       (total, item) => total + item.quantity * item.unit_price,
       0
     );
 
-    // Ruajtja e porosise dhe produkteve ne databaze
+    // Kontrollojme nese kjo porosi eshte regjistruar me pare
+    const existingOrder = await sql`
+      SELECT id
+      FROM orders
+      WHERE client_order_id = ${clientOrderId}::uuid
+      LIMIT 1
+    `;
+
+    if (existingOrder.length > 0) {
+      return NextResponse.json(
+        {
+          success: true,
+          message: "Order was already saved.",
+          orderId: existingOrder[0].id,
+          alreadySaved: true,
+        },
+        { status: 200 }
+      );
+    }
+
+    // Ruajtja e porosise dhe produkteve
     const result = await sql`
       WITH new_order AS (
         INSERT INTO orders (
+          client_order_id,
           customer_name,
           customer_email,
           customer_phone,
@@ -98,6 +127,7 @@ export async function POST(request: Request) {
           status
         )
         VALUES (
+          ${clientOrderId}::uuid,
           ${customerName.trim()},
           ${customerEmail.trim()},
           ${customerPhone.trim()},
@@ -106,6 +136,9 @@ export async function POST(request: Request) {
           ${totalAmount},
           'pending'
         )
+        ON CONFLICT (client_order_id)
+        WHERE client_order_id IS NOT NULL
+        DO NOTHING
         RETURNING id
       ),
       new_items AS (
@@ -131,7 +164,18 @@ export async function POST(request: Request) {
         RETURNING id
       )
       SELECT id FROM new_order
+
+      UNION ALL
+
+      SELECT id
+      FROM orders
+      WHERE client_order_id = ${clientOrderId}::uuid
+      LIMIT 1
     `;
+
+    if (result.length === 0) {
+      throw new Error("Order could not be confirmed.");
+    }
 
     return NextResponse.json(
       {
@@ -153,3 +197,4 @@ export async function POST(request: Request) {
     );
   }
 }
+

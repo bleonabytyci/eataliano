@@ -1,4 +1,5 @@
-const CACHE_NAME = "eataliano-v1";
+
+const CACHE_NAME = "eataliano-offline-v3";
 
 const OFFLINE_FILES = [
   "/",
@@ -37,29 +38,79 @@ self.addEventListener("fetch", (event) => {
     request.method !== "GET" ||
     url.origin !== self.location.origin ||
     url.pathname.startsWith("/api/") ||
-    url.pathname.startsWith("/admin") ||
-    url.pathname.startsWith("/checkout")
+    url.pathname.startsWith("/admin")
   ) {
     return;
   }
 
+  // Faqet: provo internetin, pastaj përdor kopjen e ruajtur.
   if (request.mode === "navigate") {
     event.respondWith(
-      fetch(request)
-        .then((response) => {
-          if (url.pathname === "/" && response.ok) {
-            const copy = response.clone();
-            caches.open(CACHE_NAME).then((cache) => cache.put("/", copy));
+      (async () => {
+        try {
+          const response = await fetch(request);
+
+          if (response.ok) {
+            const cache = await caches.open(CACHE_NAME);
+            await cache.put(request, response.clone());
           }
 
           return response;
-        })
-        .catch(async () => {
-          return (
-            (await caches.match("/offline")) ||
-            (await caches.match("/"))
-          );
-        })
+        } catch {
+          const cachedPage = await caches.match(request);
+
+          if (cachedPage) {
+            return cachedPage;
+          }
+
+          const homePage = await caches.match("/");
+
+          if (homePage) {
+            return homePage;
+          }
+
+          const offlinePage = await caches.match("/offline");
+
+          if (offlinePage) {
+            return offlinePage;
+          }
+
+          return new Response("Je pa internet.", {
+            headers: {
+              "Content-Type": "text/plain; charset=utf-8",
+            },
+          });
+        }
+      })()
     );
+
+    return;
   }
+
+  // JavaScript, CSS, fotografitë dhe resurset e tjera.
+  event.respondWith(
+    (async () => {
+      const cache = await caches.open(CACHE_NAME);
+
+      try {
+        const response = await fetch(request);
+
+        if (response.ok) {
+          await cache.put(request, response.clone());
+        }
+
+        return response;
+      } catch {
+        const cachedResource = await cache.match(request);
+
+        if (cachedResource) {
+          return cachedResource;
+        }
+
+        return new Response("Resource unavailable offline.", {
+          status: 503,
+        });
+      }
+    })()
+  );
 });
