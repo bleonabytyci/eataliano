@@ -71,14 +71,15 @@ export default function Home() {
     }
   }, [shporta, shportaUNgarkua]);
 
-  function shtoNeShporte(ushqimi: (typeof ushqimet)[number]) {
-    setShporta((shportaAktuale) => [...shportaAktuale, ushqimi]);
-    setNjoftimi(`${ushqimi.emri} added to cart!`);
+function shtoNeShporte(ushqimi: (typeof ushqimet)[number]) {
+  setShporta((shportaAktuale) => [...shportaAktuale, ushqimi]);
 
-    window.setTimeout(() => {
-      setNjoftimi("");
-    }, 2500);
-  }
+  setNjoftimi(`${ushqimi.emri} added to cart!`);
+
+  window.setTimeout(() => {
+    setNjoftimi("");
+  }, 2500);
+}
 
   function largoNgaShporta(index: number) {
     setShporta((shportaAktuale) =>
@@ -86,116 +87,404 @@ export default function Home() {
     );
   }
 
+
   const totali = shporta.reduce(
     (shuma, ushqimi) => shuma + ushqimi.cmimi,
     0
   );
 
-  return (
-    <main className="min-h-screen bg-[#faf8f4] text-[#25251f]">
-      {njoftimi !== "" && (
-        <div role="status" aria-live="polite" className="fixed right-5 top-24 z-[200] flex max-w-[calc(100vw-2.5rem)] items-center gap-3 rounded-xl bg-[#284b36] px-5 py-4 text-sm font-semibold text-white shadow-2xl">
-          <span className="flex h-7 w-7 items-center justify-center rounded-full bg-white/20">
-            ✓
-          </span>
-          <span>{njoftimi}</span>
-        </div>
-      )}
+ return (
+  <main className="min-h-screen bg-[#faf8f4] text-[#25251f]">
 
-      <header className="sticky top-0 z-50 border-b border-[#e8e3d9] bg-[#faf8f4]/95 backdrop-blur">
-        <div className="mx-auto flex max-w-7xl items-center justify-between px-6 py-5">
-          <Link href="/" className="text-2xl font-bold tracking-wide text-[#284b36]">
-            Eataliano
-          </Link>
+    {/* TOAST NOTIFICATION */}
+    {njoftimi !== "" && (
+      <div
+        role="status"
+        aria-live="polite"
+        className="fixed right-5 top-24 z-[200] flex items-center gap-3 rounded-xl bg-[#284b36] px-5 py-4 text-sm font-semibold text-white shadow-2xl"
+      >
+        <span className="flex h-7 w-7 items-center justify-center rounded-full bg-white/20">
+          ✓
+        </span>
+        <span>{njoftimi}</span>
+      </div>
+    )}
+
+    {/* HEADER */}
+      <header className="sticky top-0 z-50 border-b border-[#e9e2d7] bg-[#faf8f4]/95 backdrop-blur-md">
+        <div className="mx-auto flex max-w-7xl items-center justify-between px-6 py-5 lg:px-10">
+          <a
+            href="#home"
+            className="text-3xl font-extrabold tracking-tight text-[#284b36]"
+          >
+            Eataliano<span className="text-[#c87935]">.</span>
+          </a>
+
+          <nav className="hidden items-center gap-9 text-sm font-semibold md:flex">
+            <a href="#home" className="transition hover:text-[#c87935]">
+              Home
+            </a>
+            <a href="#menu" className="transition hover:text-[#c87935]">
+              Our Menu
+            </a>
+            <a href="#about" className="transition hover:text-[#c87935]">
+              About Us
+            </a>
+            <a href="#contact" className="transition hover:text-[#c87935]">
+              Contact
+            </a>
+          </nav>
 
           <button
+            type="button"
             onClick={() => setShfaqShporten(true)}
-            className="rounded-full bg-[#284b36] px-5 py-3 text-sm font-semibold text-white transition hover:bg-[#1d3828]"
+            className="rounded-full bg-[#284b36] px-5 py-3 text-sm font-bold text-white transition hover:bg-[#1d3928]"
           >
             Cart ({shporta.length})
           </button>
         </div>
       </header>
 
-      <section className="mx-auto grid max-w-7xl items-center gap-10 px-6 py-16 md:grid-cols-2 md:py-24">
-        <div>
-          <p className="mb-4 font-semibold uppercase tracking-[0.25em] text-[#a46c35]">
-            Authentic Italian Food
-          </p>
-          <h1 className="mb-6 text-5xl font-bold leading-tight text-[#284b36] md:text-7xl">
-            A Taste of Italy, Made Fresh.
-          </h1>
-          <p className="mb-8 max-w-lg text-lg leading-8 text-[#68665e]">
-            Discover delicious Italian pizza, fresh pasta and your favorite
-            classic dishes. Made with love and served fresh.
-          </p>
-          <a
-            href="#menu"
-            className="inline-block rounded-full bg-[#284b36] px-8 py-4 font-semibold text-white transition hover:bg-[#1d3828]"
-          >
-            Explore Our Menu
-          </a>
-        </div>
-
-        <div className="relative h-[350px] overflow-hidden rounded-3xl md:h-[480px]">
-          <Image
-            src="https://images.unsplash.com/photo-1579751626657-72bc17010498?w=900"
-            alt="Fresh Italian pizza"
-            fill
-            priority
-            unoptimized
-            className="object-cover"
+      {/* RIGHT SIDE SHOPPING CART DRAWER */}
+      {shfaqShporten && (
+        <div className="fixed inset-0 z-100">
+          {/* BACKGROUND OVERLAY */}
+          <button
+            type="button"
+            aria-label="Close shopping cart"
+            onClick={() => setShfaqShporten(false)}
+            className="absolute inset-0 h-full w-full cursor-default bg-black/50"
           />
+
+          {/* CART DRAWER */}
+          <aside
+            role="dialog"
+            aria-modal="true"
+            aria-label="Shopping cart"
+            className="absolute right-0 top-0 flex h-full w-full max-w-430px flex-col bg-[#faf8f4] shadow-2xl"
+          >
+            {/* CART HEADER */}
+            <div className="flex items-center justify-between border-b border-[#e9e2d7] px-6 py-6">
+              <div>
+                <p className="text-xs font-bold uppercase tracking-[0.2em] text-[#c87935]">
+                  Eataliano
+                </p>
+                <h2 className="mt-1 text-2xl font-extrabold text-[#284b36]">
+                  Your Cart
+                </h2>
+              </div>
+
+              <button
+                type="button"
+                onClick={() => setShfaqShporten(false)}
+                aria-label="Close cart"
+                className="flex h-10 w-10 items-center justify-center rounded-full border border-[#e9e2d7] text-xl text-[#284b36] transition hover:bg-[#e9eee6]"
+              >
+                ✕
+              </button>
+            </div>
+
+            {/* CART CONTENT */}
+            <div className="flex-1 overflow-y-auto px-6 py-6">
+              {shporta.length === 0 ? (
+                <div className="flex h-full flex-col items-center justify-center text-center">
+                  <div className="flex h-20 w-20 items-center justify-center rounded-full bg-[#e9eee6] text-4xl">
+                    🛒
+                  </div>
+
+                  <h3 className="mt-6 text-xl font-extrabold text-[#284b36]">
+                    Your cart is empty
+                  </h3>
+
+                  <p className="mt-2 max-w-xs text-sm leading-6 text-[#888176]">
+                    Looks like you have not added anything to your cart yet.
+                    Explore our menu and find something delicious!
+                  </p>
+
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setShfaqShporten(false);
+                      document.getElementById("menu")?.scrollIntoView({
+                        behavior: "smooth",
+                      });
+                    }}
+                    className="mt-7 rounded-full bg-[#284b36] px-7 py-3 font-bold text-white transition hover:bg-[#1d3928]"
+                  >
+                    Explore Our Menu
+                  </button>
+                </div>
+              ) : (
+                <div>
+                  <p className="mb-5 text-sm font-semibold text-[#888176]">
+                    {shporta.length} {shporta.length === 1 ? "item" : "items"} in
+                    your cart
+                  </p>
+
+                  <div className="space-y-5">
+                    {shporta.map((ushqimi, index) => (
+                      <div
+                        key={`${ushqimi.id}-${index}`}
+                        className="flex gap-4 border-b border-[#e9e2d7] pb-5"
+                      >
+                        <div className="relative h-24 w-24 shrink-0 overflow-hidden rounded-xl">
+                          <Image
+                            src={ushqimi.foto}
+                            alt={ushqimi.emri}
+                            fill
+                            unoptimized
+                            sizes="96px"
+                            className="object-cover"
+                          />
+                        </div>
+
+                        <div className="flex min-w-0 flex-1 flex-col justify-between">
+                          <div>
+                            <h3 className="font-bold text-[#284b36]">
+                              {ushqimi.emri}
+                            </h3>
+                            <p className="mt-1 text-sm text-[#888176]">
+                              {ushqimi.kategoria}
+                            </p>
+                            <p className="mt-2 font-extrabold text-[#c87935]">
+                              ${ushqimi.cmimi.toFixed(2)}
+                            </p>
+                          </div>
+
+                          <button
+                            type="button"
+                            onClick={() => largoNgaShporta(index)}
+                            className="mt-2 self-start text-sm font-semibold text-red-600 transition hover:text-red-800"
+                          >
+                            Remove
+                          </button>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
+
+            {/* CART FOOTER */}
+            {shporta.length > 0 && (
+              <div className="border-t border-[#e9e2d7] bg-white px-6 py-6">
+                <div className="mb-5 flex items-center justify-between">
+                  <span className="text-base font-semibold text-[#77736b]">
+                    Subtotal
+                  </span>
+                  <span className="text-2xl font-extrabold text-[#284b36]">
+                    ${totali.toFixed(2)}
+                  </span>
+                </div>
+
+                <p className="mb-5 text-xs leading-5 text-[#888176]">
+                  Taxes and delivery fees are calculated at checkout.
+                </p>
+
+                <Link
+                  href="/checkout"
+                  onClick={() => setShfaqShporten(false)}
+                  className="block w-full rounded-full bg-[#c87935] px-7 py-4 text-center font-bold text-white transition hover:bg-[#ad6428]"
+                >
+                  Proceed to Checkout →
+                </Link>
+
+                <button
+                  type="button"
+                  onClick={() => setShfaqShporten(false)}
+                  className="mt-4 w-full py-2 text-sm font-semibold text-[#284b36] transition hover:text-[#c87935]"
+                >
+                  Continue Shopping
+                </button>
+              </div>
+            )}
+          </aside>
+        </div>
+      )}
+
+      {/* HERO */}
+      <section
+        id="home"
+        className="mx-auto max-w-7xl px-6 pb-16 pt-10 lg:px-10 lg:pb-24 lg:pt-16"
+      >
+        <div className="grid items-center gap-12 lg:grid-cols-2 lg:gap-16">
+          <div className="max-w-xl">
+            <p className="mb-6 inline-flex items-center gap-2 rounded-full bg-[#e9eee6] px-4 py-2 text-xs font-bold uppercase tracking-[0.18em] text-[#284b36]">
+              <span className="h-2 w-2 rounded-full bg-[#c87935]" />
+              Authentic Italian Cuisine
+            </p>
+
+            <h1 className="text-5xl font-extrabold leading-[1.12] tracking-tight text-[#284b36] sm:text-6xl lg:text-7xl">
+              A Taste of
+              <span className="block text-[#c87935]">Italy,</span>
+              Made for You.
+            </h1>
+
+            <p className="mt-7 max-w-lg text-lg leading-8 text-[#77736b]">
+              Discover the flavors of Italy with freshly prepared pizzas,
+              delicious pasta and authentic recipes made with love.
+            </p>
+
+            <div className="mt-9 flex flex-wrap items-center gap-4">
+              <a
+                href="#menu"
+                className="rounded-full bg-[#284b36] px-8 py-4 font-bold text-white shadow-lg shadow-[#284b36]/15 transition hover:-translate-y-1 hover:bg-[#1d3928]"
+              >
+                Explore Our Menu →
+              </a>
+
+              <a
+                href="#about"
+                className="rounded-full border border-[#d9d2c7] px-8 py-4 font-bold text-[#284b36] transition hover:bg-white"
+              >
+                Discover More
+              </a>
+            </div>
+
+            <div className="mt-12 flex flex-wrap gap-10 border-t border-[#e9e2d7] pt-8">
+              <div>
+                <p className="text-2xl font-extrabold text-[#284b36]">100%</p>
+                <p className="mt-1 text-sm text-[#888176]">Fresh Ingredients</p>
+              </div>
+              <div>
+                <p className="text-2xl font-extrabold text-[#284b36]">Italian</p>
+                <p className="mt-1 text-sm text-[#888176]">Inspired Recipes</p>
+              </div>
+              <div>
+                <p className="text-2xl font-extrabold text-[#284b36]">Made</p>
+                <p className="mt-1 text-sm text-[#888176]">With Passion</p>
+              </div>
+            </div>
+          </div>
+
+          <div className="relative">
+            <div className="absolute -right-5 -top-5 h-32 w-32 rounded-full bg-[#e9dfc9]" />
+            <div className="absolute -bottom-6 -left-6 h-40 w-40 rounded-full bg-[#e9eee6]" />
+
+            <div className="relative overflow-hidden rounded-2rem shadow-2xl">
+              <Image
+                src="https://images.unsplash.com/photo-1579751626657-72bc17010498?w=1200"
+                alt="Fresh Italian pizza"
+                width={1200}
+                height={1000}
+                unoptimized
+                priority
+                className="h-380px w-full object-cover sm:h-500px lg:h-570px"
+              />
+
+              <div className="absolute bottom-6 left-6 right-6 rounded-2xl border border-white/30 bg-white/90 p-5 shadow-lg backdrop-blur-md">
+                <p className="text-xs font-bold uppercase tracking-widest text-[#c87935]">
+                  Our Speciality
+                </p>
+                <div className="mt-2 flex items-center justify-between gap-4">
+                  <div>
+                    <h3 className="text-xl font-extrabold text-[#284b36]">
+                      Italian Pizza
+                    </h3>
+                    <p className="mt-1 text-sm text-[#77736b]">
+                      Fresh, delicious and made with love.
+                    </p>
+                  </div>
+                  <a
+                    href="#menu"
+                    className="shrink-0 rounded-full bg-[#284b36] px-5 py-3 text-sm font-bold text-white transition hover:bg-[#1d3928]"
+                  >
+                    Order Now
+                  </a>
+                </div>
+              </div>
+            </div>
+          </div>
         </div>
       </section>
 
-      <section id="menu" className="mx-auto max-w-7xl px-6 py-16">
-        <div className="mb-12 text-center">
-          <p className="mb-3 font-semibold uppercase tracking-[0.2em] text-[#a46c35]">
-            Our Selection
+      {/* ABOUT */}
+      <section id="about" className="bg-[#284b36] px-6 py-16 text-white lg:py-20">
+        <div className="mx-auto grid max-w-7xl items-center gap-10 lg:grid-cols-2 lg:px-4">
+          <div>
+            <p className="text-xs font-bold uppercase tracking-[0.2em] text-[#e6b879]">
+              Our Story
+            </p>
+            <h2 className="mt-4 text-3xl font-extrabold leading-tight sm:text-4xl">
+              Bringing the Taste of Italy to Your Table
+            </h2>
+          </div>
+
+          <p className="text-base leading-8 text-white/75">
+            At Eataliano, we believe great food brings people together.
+            Our menu celebrates Italian-inspired favorites, prepared with
+            care and served fresh for you to enjoy. From classic pizza to
+            comforting pasta, every dish is an invitation to enjoy something
+            delicious.
           </p>
-          <h2 className="text-4xl font-bold text-[#284b36]">Our Menu</h2>
-          <p className="mt-3 text-[#68665e]">
-            Fresh ingredients. Authentic Italian flavors.
-          </p>
+        </div>
+      </section>
+
+      {/* MENU */}
+      <section
+        id="menu"
+        className="mx-auto max-w-7xl px-6 py-20 lg:px-10 lg:py-24"
+      >
+        <div className="mb-12 flex flex-wrap items-end justify-between gap-5">
+          <div>
+            <p className="text-xs font-bold uppercase tracking-[0.2em] text-[#c87935]">
+              Made Fresh for You
+            </p>
+            <h2 className="mt-3 text-4xl font-extrabold text-[#284b36] sm:text-5xl">
+              Explore Our Menu
+            </h2>
+            <p className="mt-4 max-w-xl leading-7 text-[#77736b]">
+              Discover our selection of Italian favorites, prepared to make
+              every meal special.
+            </p>
+          </div>
+
+          <span className="rounded-full bg-[#e9eee6] px-5 py-3 text-sm font-bold text-[#284b36]">
+            {ushqimet.length} Delicious Dishes
+          </span>
         </div>
 
         <div className="grid gap-8 sm:grid-cols-2 lg:grid-cols-4">
-          {ushqimet.map((ushqimi) => (
+          {ushqimet.map((ushqim) => (
             <article
-              key={ushqimi.id}
-              className="overflow-hidden rounded-2xl border border-[#e8e3d9] bg-white shadow-sm transition hover:-translate-y-1 hover:shadow-lg"
+              key={ushqim.id}
+              className="group overflow-hidden rounded-2xl border border-[#eee8de] bg-white shadow-sm transition duration-300 hover:-translate-y-2 hover:shadow-xl"
             >
-              <div className="relative h-56">
+              <div className="relative overflow-hidden">
                 <Image
-                  src={ushqimi.foto}
-                  alt={ushqimi.emri}
-                  fill
+                  src={ushqim.foto}
+                  alt={ushqim.emri}
+                  width={900}
+                  height={650}
                   unoptimized
-                  className="object-cover"
+                  className="h-56 w-full object-cover transition duration-500 group-hover:scale-105"
                 />
+                <span className="absolute left-4 top-4 rounded-full bg-white/95 px-4 py-2 text-xs font-bold text-[#284b36] shadow">
+                  {ushqim.kategoria}
+                </span>
               </div>
 
-              <div className="p-5">
-                <p className="mb-2 text-xs font-semibold uppercase tracking-widest text-[#a46c35]">
-                  {ushqimi.kategoria}
-                </p>
-                <h3 className="mb-2 text-xl font-bold text-[#284b36]">
-                  {ushqimi.emri}
+              <div className="p-6">
+                <h3 className="text-xl font-extrabold text-[#284b36]">
+                  {ushqim.emri}
                 </h3>
-                <p className="mb-5 min-h-12 text-sm leading-6 text-[#68665e]">
-                  {ushqimi.pershkrimi}
+
+                <p className="mt-3 min-h-52px text-sm leading-6 text-[#888176]">
+                  {ushqim.pershkrimi}
                 </p>
 
-                <div className="flex items-center justify-between">
-                  <span className="text-lg font-bold text-[#284b36]">
-                    ${ushqimi.cmimi}
+                <div className="mt-6 flex items-center justify-between border-t border-[#eee8de] pt-5">
+                  <span className="text-2xl font-extrabold text-[#c87935]">
+                    ${ushqim.cmimi.toFixed(2)}
                   </span>
+
                   <button
-                    onClick={() => shtoNeShporte(ushqimi)}
-                    className="rounded-full bg-[#284b36] px-4 py-2 text-sm font-semibold text-white transition hover:bg-[#1d3828]"
+                    type="button"
+                    onClick={() => shtoNeShporte(ushqim)}
+                    className="rounded-full bg-[#284b36] px-5 py-3 text-sm font-bold text-white transition hover:bg-[#1d3928]"
                   >
-                    Add to Cart
+                    + Add to Cart
                   </button>
                 </div>
               </div>
@@ -204,113 +493,111 @@ export default function Home() {
         </div>
       </section>
 
-      <section id="about" className="bg-[#284b36] px-6 py-20 text-center text-white">
-        <div className="mx-auto max-w-3xl">
-          <p className="mb-3 font-semibold uppercase tracking-[0.2em] text-[#e4bd86]">
-            Our Story
-          </p>
-          <h2 className="mb-6 text-4xl font-bold">Welcome to Eataliano</h2>
-          <p className="text-lg leading-8 text-white/80">
-            We bring the warmth and flavor of Italian cuisine to your table.
-            From classic pizza to creamy pasta, every dish is prepared with
-            care and fresh ingredients.
-          </p>
-        </div>
-      </section>
+      
+{/* CONTACT */}
+<section id="contact" className="bg-[#f0eee7] px-6 py-20 lg:py-24">
+  <div className="mx-auto max-w-7xl">
+    <div className="mx-auto max-w-2xl text-center">
+      <p className="text-xs font-bold uppercase tracking-[0.2em] text-[#c87935]">
+        Get in Touch
+      </p>
 
-      <section id="contact" className="px-6 py-16 text-center">
-        <p className="mb-3 font-semibold uppercase tracking-[0.2em] text-[#a46c35]">
-          Visit Us
+      <h2 className="mt-4 text-4xl font-extrabold leading-tight text-[#284b36] sm:text-5xl">
+        Visit Eataliano
+      </h2>
+
+      <p className="mt-6 leading-8 text-[#77736b]">
+        We look forward to welcoming you. Enjoy authentic Italian food,
+        freshly prepared with love.
+      </p>
+    </div>
+
+    <div className="mt-14 grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
+      <div className="rounded-3xl border border-[#e5dfd3] bg-white p-8 text-center shadow-sm">
+        <div className="text-3xl">🍽️</div>
+        <h3 className="mt-5 text-lg font-bold text-[#284b36]">
+          Restaurant
+        </h3>
+        <p className="mt-3 text-[#77736b]">Eataliano</p>
+      </div>
+
+      <div className="rounded-3xl border border-[#e5dfd3] bg-white p-8 text-center shadow-sm">
+        <div className="text-3xl">📍</div>
+        <h3 className="mt-5 text-lg font-bold text-[#284b36]">
+          Location
+        </h3>
+        <p className="mt-3 text-[#77736b]">United States</p>
+      </div>
+
+      <div className="rounded-3xl border border-[#e5dfd3] bg-white p-8 text-center shadow-sm">
+        <div className="text-3xl">📞</div>
+        <h3 className="mt-5 text-lg font-bold text-[#284b36]">
+          Call Us
+        </h3>
+        <a
+          href="tel:+12125550147"
+          className="mt-3 inline-block text-[#77736b] transition hover:text-[#c87935]"
+        >
+          +1 (212) 555-0147
+        </a>
+      </div>
+
+      <div className="rounded-3xl border border-[#e5dfd3] bg-white p-8 text-center shadow-sm">
+        <div className="text-3xl">🍝</div>
+        <h3 className="mt-5 text-lg font-bold text-[#284b36]">
+          Cuisine
+        </h3>
+        <p className="mt-3 text-[#77736b]">
+          Italian Food & Fresh Pasta
         </p>
-        <h2 className="mb-8 text-4xl font-bold text-[#284b36]">
-          Contact Eataliano
-        </h2>
-        <div className="mx-auto max-w-xl rounded-2xl border border-[#e8e3d9] bg-white p-8 shadow-sm">
-          <h3 className="mb-4 text-2xl font-bold text-[#284b36]">Eataliano</h3>
-          <p className="mb-2 text-[#68665e]">United States</p>
-          <p className="mb-2 text-[#68665e]">+1 (212) 555-0147</p>
-          <p className="text-[#68665e]">Italian Food & Fresh Pasta</p>
-        </div>
-      </section>
+      </div>
+    </div>
+  </div>
+</section>
 
-      <footer className="bg-[#1d3828] px-6 py-8 text-center text-sm text-white/80">
-        © {new Date().getFullYear()} Eataliano. All rights reserved.
+
+      {/* FOOTER */}
+      <footer className="bg-[#1d3527] px-6 py-12 text-white">
+        <div className="mx-auto grid max-w-7xl gap-10 sm:grid-cols-2 lg:grid-cols-3">
+          <div>
+            <h2 className="text-3xl font-extrabold">
+              Eataliano<span className="text-[#c87935]">.</span>
+            </h2>
+            <p className="mt-4 max-w-xs text-sm leading-7 text-white/65">
+              Bringing authentic Italian-inspired flavors to your table.
+              Fresh food, delicious moments.
+            </p>
+          </div>
+
+          <div>
+            <h3 className="font-bold text-[#e6b879]">Quick Links</h3>
+            <div className="mt-5 flex flex-col items-start gap-3 text-sm text-white/70">
+              <a href="#home" className="transition hover:text-white">Home</a>
+              <a href="#menu" className="transition hover:text-white">Our Menu</a>
+              <a href="#about" className="transition hover:text-white">About Us</a>
+              <a href="#contact" className="transition hover:text-white">Contact</a>
+            </div>
+          </div>
+
+          <div>
+            <h3 className="font-bold text-[#e6b879]">Order Online</h3>
+            <p className="mt-5 text-sm leading-7 text-white/70">
+              Explore our menu, choose your favorite dishes and place your
+              order online.
+            </p>
+            <a
+              href="#menu"
+              className="mt-4 inline-block font-bold text-[#e6b879] transition hover:text-white"
+            >
+              Browse Menu →
+            </a>
+          </div>
+        </div>
+
+        <div className="mx-auto mt-12 max-w-7xl border-t border-white/15 pt-6 text-center text-sm text-white/50">
+          © 2026 Eataliano. All rights reserved.
+        </div>
       </footer>
-
-      {shfaqShporten && (
-        <div className="fixed inset-0 z-[100] flex justify-end bg-black/50">
-          <button
-            aria-label="Close cart"
-            onClick={() => setShfaqShporten(false)}
-            className="absolute inset-0 cursor-default"
-          />
-
-          <aside className="relative z-10 flex h-full w-full max-w-md flex-col bg-[#faf8f4] shadow-2xl">
-            <div className="flex items-center justify-between border-b border-[#e8e3d9] p-6">
-              <h2 className="text-2xl font-bold text-[#284b36]">
-                Your Cart ({shporta.length})
-              </h2>
-              <button
-                onClick={() => setShfaqShporten(false)}
-                aria-label="Close cart"
-                className="text-2xl text-[#68665e] hover:text-[#284b36]"
-              >
-                ×
-              </button>
-            </div>
-
-            <div className="flex-1 overflow-y-auto p-6">
-              {shporta.length === 0 ? (
-                <p className="py-10 text-center text-[#68665e]">
-                  Your cart is empty.
-                </p>
-              ) : (
-                <div className="space-y-4">
-                  {shporta.map((ushqimi, index) => (
-                    <div
-                      key={`${ushqimi.id}-${index}`}
-                      className="flex items-center justify-between gap-4 rounded-xl border border-[#e8e3d9] bg-white p-4"
-                    >
-                      <div>
-                        <h3 className="font-semibold text-[#284b36]">
-                          {ushqimi.emri}
-                        </h3>
-                        <p className="text-sm text-[#68665e]">
-                          ${ushqimi.cmimi}
-                        </p>
-                      </div>
-                      <button
-                        onClick={() => largoNgaShporta(index)}
-                        className="text-sm font-semibold text-red-600 hover:text-red-800"
-                      >
-                        Remove
-                      </button>
-                    </div>
-                  ))}
-                </div>
-              )}
-            </div>
-
-            <div className="border-t border-[#e8e3d9] p-6">
-              <div className="mb-5 flex items-center justify-between text-lg font-bold text-[#284b36]">
-                <span>Subtotal</span>
-                <span>${totali.toFixed(2)}</span>
-              </div>
-              <Link
-                href="/checkout"
-                onClick={() => setShfaqShporten(false)}
-                className={`block rounded-full px-6 py-4 text-center font-semibold text-white transition ${
-                  shporta.length === 0
-                    ? "pointer-events-none bg-gray-400"
-                    : "bg-[#284b36] hover:bg-[#1d3828]"
-                }`}
-              >
-                Proceed to Checkout
-              </Link>
-            </div>
-          </aside>
-        </div>
-      )}
     </main>
   );
 }
